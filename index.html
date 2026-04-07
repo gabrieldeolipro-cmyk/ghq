@@ -54,10 +54,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--gold)}
 .tab-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:7px;opacity:0.7}
 .tab.active .tab-dot{opacity:1}
-.dot-i{background:var(--imann)}.dot-m{background:var(--mali)}.dot-p{background:var(--pes)}
+.dot-i{background:#c9a84c}.dot-m{background:#c47a4a}.dot-p{background:#4aad82}
 
 /* MAIN */
-.main{display:grid;grid-template-columns:1fr 320px;overflow:hidden}
+.main{display:grid;grid-template-columns:1fr 260px;overflow:hidden}
 .board{overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;border-right:1px solid var(--border)}
 .ai-col{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
 
@@ -157,7 +157,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.2s}
 .modal-bg.open{opacity:1;pointer-events:all}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:26px;width:320px;display:flex;flex-direction:column;gap:13px}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:26px;width:280px;display:flex;flex-direction:column;gap:13px}
 .modal h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--text)}
 .modal input{width:100%;font-size:13px;font-family:'DM Sans',sans-serif;padding:10px 13px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);outline:none}
 .modal input:focus{border-color:var(--gold-dim)}
@@ -607,7 +607,7 @@ async function sendAI(){
   const load=appendMsg('...','ai loading');
   const msgsEl=document.getElementById('aiMsgs');
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://blue-feather-e4b6.gabrieldeolipro.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
