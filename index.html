@@ -157,7 +157,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .m-cancel:hover{color:var(--text2)}
 .m-ok{font-size:11px;padding:7px 13px;border-radius:var(--r);border:1px solid var(--gold-dim);background:var(--gold-bg);cursor:pointer;color:var(--gold2);font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.2s}
 .m-ok:hover{background:var(--gold);color:#0e0e0f}
-/* DASHBOARD */
 .dash-wrap{padding:0;display:flex;flex-direction:column;gap:14px}
 .dash-config-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:400}
 .dash-config-overlay.hidden{display:none}
@@ -256,10 +255,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <body>
 <div class="shell">
   <div class="header">
-    <div>
-      <div class="logo">G<em>.</em>HUB</div>
-      <div class="logo-sub">Painel Executivo</div>
-    </div>
+    <div><div class="logo">G<em>.</em>HUB</div><div class="logo-sub">Painel Executivo</div></div>
     <div class="header-right">
       <div class="pill" id="datePill"></div>
       <div class="pill sync-pill" id="syncPill" onclick="syncNow()">sync</div>
@@ -308,23 +304,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <div class="modal-bg" id="contaModal">
   <div class="modal">
     <h3>Nova conta</h3>
-    <div class="modal-label">Nome</div>
-    <input id="mNome" placeholder="Ex: Fornecedor China">
-    <div class="modal-label">Valor (R$)</div>
-    <input id="mValor" placeholder="850.00" type="number" step="0.01">
-    <div class="modal-label">Vencimento</div>
-    <input id="mDate" type="date">
+    <div class="modal-label">Nome</div><input id="mNome" placeholder="Ex: Fornecedor China">
+    <div class="modal-label">Valor (R$)</div><input id="mValor" placeholder="850.00" type="number" step="0.01">
+    <div class="modal-label">Vencimento</div><input id="mDate" type="date">
     <div class="modal-label">Recorrência</div>
     <select id="mRecorr" onchange="toggleParcelas()">
       <option value="">Sem recorrência</option>
-      <option value="semanal">Semanal</option>
-      <option value="mensal">Mensal</option>
-      <option value="bimestral">Bimestral</option>
-      <option value="trimestral">Trimestral</option>
-      <option value="semestral">Semestral</option>
-      <option value="anual">Anual</option>
+      <option value="semanal">Semanal</option><option value="mensal">Mensal</option>
+      <option value="bimestral">Bimestral</option><option value="trimestral">Trimestral</option>
+      <option value="semestral">Semestral</option><option value="anual">Anual</option>
     </select>
-    <div class="modal-label" id="parcelasLbl" style="display:none">Nº de parcelas (opcional)</div>
+    <div class="modal-label" id="parcelasLbl" style="display:none">Nº de parcelas</div>
     <input id="mParcelas" type="number" min="2" max="120" placeholder="Ex: 12" style="display:none">
     <div class="modal-btns">
       <button class="m-cancel" onclick="closeModal()">Cancelar</button>
@@ -336,7 +326,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <div class="dash-config-overlay hidden" id="dashConfigOverlay">
   <div class="dash-config-card">
     <div class="dcc-title">Mooners · Conectar Bling</div>
-    <div class="dcc-sub">API Key salva localmente no browser. Nenhum dado sai daqui.</div>
+    <div class="dcc-sub">Cole seu token manualmente ou use o link OAuth abaixo.</div>
     <div class="dcc-label">Bling API Key (Bearer token)</div>
     <input class="dcc-input" type="password" id="dccApiKey" placeholder="Seu token do Bling v3...">
     <div class="dcc-row">
@@ -347,9 +337,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       <div><div class="dcc-label">ACOS alvo ML (%)</div><input class="dcc-input" type="number" id="dccAcos" value="12"></div>
       <div><div class="dcc-label">Simples Nacional (%)</div><input class="dcc-input" type="number" id="dccTax" value="6"></div>
     </div>
-    <button class="dcc-save" onclick="dashSaveConfig()">Conectar →</button>
+    <button class="dcc-save" onclick="dashSaveConfig()">Salvar →</button>
+    <button class="dcc-save" style="background:var(--gold);color:#0e0e0f;margin-top:-4px" onclick="window.location.href='https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=60ebc88aead60a79dd3b7e42d5b965b7044d1897&state=ghub'">Conectar via Bling OAuth →</button>
     <button class="dcc-demo" onclick="dashLoadDemo()">Entrar com dados demo</button>
-    <div class="dcc-note">Para gerar token: Bling → Configurações → API → Integração → Gerar token v3</div>
+    <div class="dcc-note">Token salvo localmente no browser.</div>
   </div>
 </div>
 
@@ -374,12 +365,7 @@ const COL_LABELS={todo:'A fazer',doing:'Andamento',done:'Concluído',backdo:'Bac
 let area='imann',sub='dashboard',tipo='tarefa',data={},notifOn=false,notifTimer=null,moveCardId=null,lpTimer=null;
 
 function saveLocal(){localStorage.setItem('ghub2',JSON.stringify(data))}
-function initData(){
-  const s=localStorage.getItem('ghub2');
-  if(s){try{data=JSON.parse(s)}catch(e){data={}}}
-  ['imann','mali','pes'].forEach(a=>{if(!data[a])data[a]={};SUBTABS[a].forEach(st=>{if(st.id==='dashboard')return;if(!data[a][st.id])data[a][st.id]={cards:[],contas:[]};});});
-  if(!data.frase)data.frase='';if(data.notifOn===undefined)data.notifOn=false;
-}
+function initData(){const s=localStorage.getItem('ghub2');if(s){try{data=JSON.parse(s)}catch(e){data={}}}['imann','mali','pes'].forEach(a=>{if(!data[a])data[a]={};SUBTABS[a].forEach(st=>{if(st.id==='dashboard')return;if(!data[a][st.id])data[a][st.id]={cards:[],contas:[]};});});if(!data.frase)data.frase='';if(data.notifOn===undefined)data.notifOn=false;}
 function cur(){return data[area][sub]}
 function setArea(a,el){area=a;sub=SUBTABS[a][0].id;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderSubs();renderBoard();}
 function setSub(s,el){sub=s;document.querySelectorAll('.subtab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderBoard();}
@@ -396,8 +382,7 @@ function startLP(id,e){lpTimer=setTimeout(()=>{const t=e.touches[0];openMoveMenu
 function cancelLP(){clearTimeout(lpTimer);}
 
 function renderKanban(){
-  const today=new Date().toISOString().split('T')[0];
-  const cards=cur().cards;const contas=cur().contas;
+  const today=new Date().toISOString().split('T')[0];const cards=cur().cards;const contas=cur().contas;
   const kanbanHTML=COLS.map(col=>{const cc=cards.filter(c=>c.col===col);return`<div class="k-col${col==='backdo'?' backdo':''}"><div class="k-col-head">${COL_LABELS[col]} <span>${cc.length}</span></div><div class="cards-wrap">${cc.map(c=>`<div class="card${c.done?' done':''}${col==='backdo'?' backdo-style':''}" oncontextmenu="event.preventDefault();openMoveMenu(${c.id},event.clientX,event.clientY)" ontouchstart="startLP(${c.id},event)" ontouchend="cancelLP()" ontouchmove="cancelLP()"><div class="card-top"><div class="chk${c.done?' on':''}" onclick="checkCard(${c.id})"></div><span class="card-txt">${esc(c.txt)}</span></div><div class="card-foot"><span class="badge ${c.tipo}">${c.tipo}</span>${c.dt?`<span class="card-date">${fmtD(c.dt)}</span>`:''}<span class="card-del" onclick="delCard(${c.id})">remover</span></div></div>`).join('')}</div></div>`;}).join('');
   const contasHTML=contas.length?contas.map((c,i)=>{const vence=c.dt&&c.dt<=today&&!c.paid;const rl=c.recorr?`↻ ${c.recorr}${c.parcelas?' · '+(c.parcelaAtual||1)+'/'+c.parcelas:''}` :'';return`<div class="conta-row"><div class="c-chk${c.paid?' paid':''}" onclick="toggleConta(${i})"></div><div class="conta-info"><div class="conta-nm">${esc(c.nome)}</div>${c.dt?`<div class="conta-dt">vence ${fmtD(c.dt)}</div>`:''}${rl?`<div class="conta-recorr">${rl}</div>`:''}</div><span class="conta-val ${c.paid?'pago':vence?'vence':'ok'}">R$ ${parseFloat(c.valor||0).toFixed(2)}</span></div>`;}).join(''):'<div class="no-items">Nenhuma conta cadastrada</div>';
   document.getElementById('board').innerHTML=`<div><div class="k-title"><span>Quadro</span><span class="k-badge">${cards.filter(c=>c.col!=='done').length} ativas</span></div><div class="kanban-cols">${kanbanHTML}</div></div><div class="contas-wrap"><div class="sec-hd"><span>Contas & vencimentos</span><button class="add-conta-btn" onclick="openModal()">+ Nova conta</button></div>${contasHTML}</div>`;
@@ -410,7 +395,7 @@ function openModal(){document.getElementById('contaModal').classList.add('open')
 function closeModal(){document.getElementById('contaModal').classList.remove('open');}
 function saveConta(){const nome=document.getElementById('mNome').value.trim();if(!nome)return;const valor=document.getElementById('mValor').value||'0';const dt=document.getElementById('mDate').value;const recorr=document.getElementById('mRecorr').value;const parcelas=parseInt(document.getElementById('mParcelas').value)||null;cur().contas.push({nome,valor,dt,paid:false,recorr,parcelas,parcelaAtual:1});closeModal();['mNome','mValor','mDate'].forEach(id=>document.getElementById(id).value='');document.getElementById('mRecorr').value='';toggleParcelas();renderBoard();pushData();toast('Conta adicionada ✓');}
 
-// ═══ DASHBOARD MOONERS ═══
+// ═══ DASHBOARD ═══
 let DCFG={apiKey:'',mlMargin:25,shMargin:20,acos:12,tax:6,isDemo:false};
 let DPERIOD=7,DCHANNELS={ml:true,sh:true};
 let dRevChart=null,dMixChart=null,dRefreshTimer=null,dCountdown=300;
@@ -422,8 +407,24 @@ function dashOpenConfig(){document.getElementById('dccApiKey').value=DCFG.apiKey
 function dashSetPeriod(days,btn){DPERIOD=days;document.querySelectorAll('.dp-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');dashFetchAll();}
 function dashToggleChannel(ch){DCHANNELS[ch]=!DCHANNELS[ch];const btn=document.getElementById('dch-'+ch);btn.classList.toggle('on-'+ch,DCHANNELS[ch]);dashRenderCharts(window._dashData);}
 
+async function blingOAuthExchange(code){
+  const makeWebhook='https://hook.us2.make.com/toprraxr3pd3mlt5ke1uh5fijcp83746';
+  try{
+    const res=await fetch(makeWebhook+'?code='+encodeURIComponent(code));
+    const j=await res.json();
+    if(j.access_token){
+      DCFG.apiKey=j.access_token;DCFG.isDemo=false;
+      if(j.refresh_token)DCFG.refreshToken=j.refresh_token;
+      localStorage.setItem('mooners_dcfg',JSON.stringify(DCFG));
+      window.history.replaceState({},'',window.location.pathname);
+      toast('Bling conectado ✓');
+      area='imann';sub='dashboard';renderSubs();renderBoard();
+    } else { toast('Erro: '+(j.error||JSON.stringify(j))); }
+  }catch(e){toast('Erro OAuth: '+e.message);}
+}
+
 function dashDateRange(days){const end=new Date(),start=new Date();start.setDate(start.getDate()-days);const fmt=d=>d.toISOString().split('T')[0];return{start:fmt(start),end:fmt(end)};}
-async function dashBlingFetch(ep){const r=await fetch('https://www.bling.com.br/Api/v3/'+ep,{headers:{'Authorization':'Bearer '+DCFG.apiKey,'Accept':'application/json'}});if(!r.ok)throw new Error('Bling '+r.status+': '+ep);return r.json();}
+async function dashBlingFetch(ep){const r=await fetch('https://www.bling.com.br/Api/v3/'+ep,{headers:{'Authorization':'Bearer '+DCFG.apiKey,'Accept':'application/json'}});if(!r.ok)throw new Error('Bling '+r.status);return r.json();}
 async function dashGetAllPedidos(days){const{start,end}=dashDateRange(days);let page=1,all=[];while(true){const res=await dashBlingFetch(`pedidos/vendas?pagina=${page}&limite=100&dataInicio=${start}&dataFim=${end}`);const items=res?.data?.data||res?.data||[];if(!items.length)break;all=all.concat(items);if(items.length<100)break;page++;}return all;}
 async function dashFetchAll(){if(DCFG.isDemo){dashRenderDemo();return;}if(!DCFG.apiKey){document.getElementById('dashConfigOverlay').classList.remove('hidden');return;}dashShowError('');try{const pedidos=await dashGetAllPedidos(DPERIOD);const norm=pedidos.map(p=>({numero:p.numero||p.id,loja:dashGuessChannel(p),data:dashFmtDate(p.data),dateBrut:new Date(p.data),produto:dashGetProd(p),valor:parseFloat(p.totalVenda||p.total||0),isFrete:dashIsFreteGratis(p),status:dashMapStatus(p.situacao)}));const d=dashProcess(norm);window._dashData=d;dashRenderAll(d);}catch(err){dashShowError('Erro Bling: '+err.message);}}
 function dashGuessChannel(p){const loja=(p.loja?.nome||p.ecommerce?.nome||'').toLowerCase();if(loja.includes('shopee'))return'Shopee';if(loja.includes('mercado')||loja.includes('meli')||loja.includes('ml'))return'Mercado Livre';return'Mercado Livre';}
@@ -437,9 +438,8 @@ function dashRenderDemo(){const prods=['Night Drive','Night Drive Novo','Leitura
 function dashProcess(orders){const today=new Date().toLocaleDateString('pt-BR');let mlO=orders.filter(o=>o.loja==='Mercado Livre');let shO=orders.filter(o=>o.loja==='Shopee');if(!DCHANNELS.ml)mlO=[];if(!DCHANNELS.sh)shO=[];const mlRev=mlO.reduce((s,o)=>s+o.valor,0);const shRev=shO.reduce((s,o)=>s+o.valor,0);const total=mlRev+shRev;const mlPremium=mlO.filter(o=>o.isFrete);const mlClassico=mlO.filter(o=>!o.isFrete);const mlFee=mlRev*0.19;const mlFreight=mlPremium.length*12.35;const mlTax=mlRev*(DCFG.tax/100);const mlAcos=mlRev*(DCFG.acos/100);const mlCosts=mlFee+mlFreight+mlTax+mlAcos;const mlNet=mlRev-mlCosts;const mlPct=mlRev>0?mlNet/mlRev*100:0;const shFee=shRev*0.20+shO.length*4;const shTax=shRev*(DCFG.tax/100);const shAds=shRev*0.05;const shCosts=shFee+shTax+shAds;const shNet=shRev-shCosts;const shPct=shRev>0?shNet/shRev*100:0;const totalNet=mlNet+shNet;const avgMargin=total>0?totalNet/total*100:0;const days={};[...mlO,...shO].forEach(o=>{const k=o.dateBrut?o.dateBrut.toLocaleDateString('pt-BR'):o.data;if(!days[k])days[k]={ml:0,sh:0};if(o.loja==='Mercado Livre')days[k].ml+=o.valor;else days[k].sh+=o.valor;});const sorted=Object.keys(days).sort((a,b)=>{const pa=a.split('/').reverse().join('-'),pb=b.split('/').reverse().join('-');return pa.localeCompare(pb);}).slice(-DPERIOD);const todayO=orders.filter(o=>o.data===today);return{mlRev,shRev,total,mlO,shO,mlFee,mlFreight,mlTax,mlAcos,mlCosts,mlNet,mlPct,mlPremiumCount:mlPremium.length,mlClassicoCount:mlClassico.length,shFee,shTax,shAds,shCosts,shNet,shPct,totalNet,avgMargin,dailyLabels:sorted,dailyML:sorted.map(d=>Math.round(days[d]?.ml||0)),dailySH:sorted.map(d=>Math.round(days[d]?.sh||0)),todayCount:todayO.length,todayActive:todayO.filter(o=>o.status==='Em andamento').length,avgTicket:(mlO.length+shO.length)>0?total/(mlO.length+shO.length):0,orders:orders.slice(0,50)};}
 
 function renderDashboard(){
-  dashLoadConfig();
-  const needsConfig=!DCFG.apiKey&&!DCFG.isDemo;
-  document.getElementById('board').innerHTML=`<div class="dash-wrap" id="dashInner"><div class="d-error" id="dashError"></div><div class="dash-controls"><button class="dp-btn${DPERIOD===7?' active':''}" onclick="dashSetPeriod(7,this)">7d</button><button class="dp-btn${DPERIOD===15?' active':''}" onclick="dashSetPeriod(15,this)">15d</button><button class="dp-btn${DPERIOD===30?' active':''}" onclick="dashSetPeriod(30,this)">30d</button><button class="dp-btn${DPERIOD===60?' active':''}" onclick="dashSetPeriod(60,this)">60d</button><div class="dc-sep"></div><button class="dch-btn${DCHANNELS.ml?' on-ml':''}" id="dch-ml" onclick="dashToggleChannel('ml')"><span style="width:6px;height:6px;border-radius:50%;background:#ffe600;display:inline-block"></span>ML</button><button class="dch-btn${DCHANNELS.sh?' on-sh':''}" id="dch-sh" onclick="dashToggleChannel('sh')"><span style="width:6px;height:6px;border-radius:50%;background:#f26522;display:inline-block"></span>Shopee</button><div class="dash-live"><div class="dash-live-dot"></div>LIVE</div><button class="dash-settings-btn" onclick="dashOpenConfig()">⚙ config</button></div><div class="d-kpi-grid"><div class="d-kpi k-total"><div class="d-kpi-lbl">Faturamento total</div><div class="d-kpi-val" id="dkTotal">—</div><div class="d-kpi-sub" id="dkTotalSub">carregando...</div></div><div class="d-kpi k-ml"><div class="d-kpi-lbl">Mercado Livre</div><div class="d-kpi-val" id="dkML">—</div><div class="d-kpi-sub" id="dkMLSub">—</div></div><div class="d-kpi k-sh"><div class="d-kpi-lbl">Shopee</div><div class="d-kpi-val" id="dkSH">—</div><div class="d-kpi-sub" id="dkSHSub">—</div></div><div class="d-kpi k-margin"><div class="d-kpi-lbl">Margem líquida</div><div class="d-kpi-val" id="dkMargin">—</div><div class="d-kpi-delta delta-neu" id="dkMarginDelta">vs meta</div></div><div class="d-kpi"><div class="d-kpi-lbl">Pedidos hoje</div><div class="d-kpi-val" id="dkToday">—</div><div class="d-kpi-sub" id="dkTodaySub">—</div></div><div class="d-kpi"><div class="d-kpi-lbl">Ticket médio</div><div class="d-kpi-val" id="dkTicket">—</div><div class="d-kpi-sub" id="dkTicketSub">—</div></div></div><div class="d-charts"><div class="d-chart-card"><div class="d-chart-head"><div class="d-chart-title">Faturamento diário</div><div class="d-chart-legend"><div class="d-leg"><div class="d-leg-dot" style="background:#ffe600"></div>ML</div><div class="d-leg"><div class="d-leg-dot" style="background:#f26522"></div>Shopee</div></div></div><div style="position:relative;width:100%;height:200px"><canvas id="dChartRev" role="img" aria-label="Faturamento diário por canal">Carregando</canvas></div></div><div class="d-chart-card"><div class="d-chart-head"><div class="d-chart-title">Mix de canal</div></div><div class="d-donut-wrap"><canvas id="dChartMix" role="img" aria-label="Mix de canal" style="max-width:180px;max-height:180px">Carregando</canvas><div class="d-donut-center"><div class="d-donut-val" id="dDonutVal">—</div><div class="d-donut-lbl">TOTAL</div></div></div></div></div><div class="d-margins"><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#ffe600"></div><div class="d-mc-name">Mercado Livre · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-ml-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa ML 19%</span><span class="d-mrow-val neg" id="dm-ml-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Frete grátis (Premium)</span><span class="d-mrow-val neg" id="dm-ml-freight">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-ml-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-ml-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">ACOS <span id="dm-ml-acos-pct">12</span>%</span><span class="d-mrow-val neg" id="dm-ml-acos">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-ml-net">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Premium / Clássico</span><span class="d-mrow-val" id="dm-ml-split">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-ml-bar" style="background:#ffe600;width:0%"></div></div></div><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#f26522"></div><div class="d-mc-name">Shopee · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-sh-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa 20% + R$4/u</span><span class="d-mrow-val neg" id="dm-sh-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-sh-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-sh-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Ads GMV Max ~5%</span><span class="d-mrow-val neg" id="dm-sh-ads">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-sh-net">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-sh-bar" style="background:#f26522;width:0%"></div></div></div><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:var(--green)"></div><div class="d-mc-name">Consolidado</div></div><div class="d-mrow"><span class="d-mrow-lbl">Receita total</span><span class="d-mrow-val" id="dm-cons-rev">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Custos estimados</span><span class="d-mrow-val neg" id="dm-cons-costs">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Margem global</span><span class="d-mrow-val pos" id="dm-cons-margin">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Meta ML / Shopee</span><span class="d-mrow-val" id="dm-cons-targets">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Status</span><span class="d-mrow-val" id="dm-cons-status">—</span></div></div></div><div class="d-orders-card"><div class="d-orders-head"><div class="d-orders-title">Pedidos recentes</div><div class="d-orders-ct" id="dOrdersCt">—</div></div><div style="overflow-x:auto"><table class="d-table"><thead><tr><th>Nº</th><th>Canal</th><th>Data</th><th>Produto</th><th>Frete</th><th>Valor</th><th>Status</th></tr></thead><tbody id="dOrdersBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Carregando...</td></tr></tbody></table></div></div></div>`;
+  dashLoadConfig();const needsConfig=!DCFG.apiKey&&!DCFG.isDemo;
+  document.getElementById('board').innerHTML=`<div class="dash-wrap" id="dashInner"><div class="d-error" id="dashError"></div><div class="dash-controls"><button class="dp-btn${DPERIOD===7?' active':''}" onclick="dashSetPeriod(7,this)">7d</button><button class="dp-btn${DPERIOD===15?' active':''}" onclick="dashSetPeriod(15,this)">15d</button><button class="dp-btn${DPERIOD===30?' active':''}" onclick="dashSetPeriod(30,this)">30d</button><button class="dp-btn${DPERIOD===60?' active':''}" onclick="dashSetPeriod(60,this)">60d</button><div class="dc-sep"></div><button class="dch-btn${DCHANNELS.ml?' on-ml':''}" id="dch-ml" onclick="dashToggleChannel('ml')"><span style="width:6px;height:6px;border-radius:50%;background:#ffe600;display:inline-block"></span>ML</button><button class="dch-btn${DCHANNELS.sh?' on-sh':''}" id="dch-sh" onclick="dashToggleChannel('sh')"><span style="width:6px;height:6px;border-radius:50%;background:#f26522;display:inline-block"></span>Shopee</button><div class="dash-live"><div class="dash-live-dot"></div>LIVE</div><button class="dash-settings-btn" onclick="dashOpenConfig()">⚙ config</button></div><div class="d-kpi-grid"><div class="d-kpi k-total"><div class="d-kpi-lbl">Faturamento total</div><div class="d-kpi-val" id="dkTotal">—</div><div class="d-kpi-sub" id="dkTotalSub">carregando...</div></div><div class="d-kpi k-ml"><div class="d-kpi-lbl">Mercado Livre</div><div class="d-kpi-val" id="dkML">—</div><div class="d-kpi-sub" id="dkMLSub">—</div></div><div class="d-kpi k-sh"><div class="d-kpi-lbl">Shopee</div><div class="d-kpi-val" id="dkSH">—</div><div class="d-kpi-sub" id="dkSHSub">—</div></div><div class="d-kpi k-margin"><div class="d-kpi-lbl">Margem líquida</div><div class="d-kpi-val" id="dkMargin">—</div><div class="d-kpi-delta delta-neu" id="dkMarginDelta">vs meta</div></div><div class="d-kpi"><div class="d-kpi-lbl">Pedidos hoje</div><div class="d-kpi-val" id="dkToday">—</div><div class="d-kpi-sub" id="dkTodaySub">—</div></div><div class="d-kpi"><div class="d-kpi-lbl">Ticket médio</div><div class="d-kpi-val" id="dkTicket">—</div><div class="d-kpi-sub" id="dkTicketSub">—</div></div></div><div class="d-charts"><div class="d-chart-card"><div class="d-chart-head"><div class="d-chart-title">Faturamento diário</div><div class="d-chart-legend"><div class="d-leg"><div class="d-leg-dot" style="background:#ffe600"></div>ML</div><div class="d-leg"><div class="d-leg-dot" style="background:#f26522"></div>Shopee</div></div></div><div style="position:relative;width:100%;height:200px"><canvas id="dChartRev" role="img" aria-label="Faturamento diário">Carregando</canvas></div></div><div class="d-chart-card"><div class="d-chart-head"><div class="d-chart-title">Mix de canal</div></div><div class="d-donut-wrap"><canvas id="dChartMix" role="img" aria-label="Mix de canal" style="max-width:180px;max-height:180px">Carregando</canvas><div class="d-donut-center"><div class="d-donut-val" id="dDonutVal">—</div><div class="d-donut-lbl">TOTAL</div></div></div></div></div><div class="d-margins"><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#ffe600"></div><div class="d-mc-name">Mercado Livre · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-ml-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa ML 19%</span><span class="d-mrow-val neg" id="dm-ml-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Frete (Premium)</span><span class="d-mrow-val neg" id="dm-ml-freight">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-ml-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-ml-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">ACOS <span id="dm-ml-acos-pct">12</span>%</span><span class="d-mrow-val neg" id="dm-ml-acos">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-ml-net">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Premium / Clássico</span><span class="d-mrow-val" id="dm-ml-split">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-ml-bar" style="background:#ffe600;width:0%"></div></div></div><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#f26522"></div><div class="d-mc-name">Shopee · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-sh-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa 20%+R$4/u</span><span class="d-mrow-val neg" id="dm-sh-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-sh-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-sh-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Ads ~5%</span><span class="d-mrow-val neg" id="dm-sh-ads">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-sh-net">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-sh-bar" style="background:#f26522;width:0%"></div></div></div><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:var(--green)"></div><div class="d-mc-name">Consolidado</div></div><div class="d-mrow"><span class="d-mrow-lbl">Receita total</span><span class="d-mrow-val" id="dm-cons-rev">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Custos estimados</span><span class="d-mrow-val neg" id="dm-cons-costs">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Margem global</span><span class="d-mrow-val pos" id="dm-cons-margin">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Meta ML / Shopee</span><span class="d-mrow-val" id="dm-cons-targets">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Status</span><span class="d-mrow-val" id="dm-cons-status">—</span></div></div></div><div class="d-orders-card"><div class="d-orders-head"><div class="d-orders-title">Pedidos recentes</div><div class="d-orders-ct" id="dOrdersCt">—</div></div><div style="overflow-x:auto"><table class="d-table"><thead><tr><th>Nº</th><th>Canal</th><th>Data</th><th>Produto</th><th>Frete</th><th>Valor</th><th>Status</th></tr></thead><tbody id="dOrdersBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Carregando...</td></tr></tbody></table></div></div></div>`;
   if(needsConfig){dashOpenConfig();}else if(DCFG.isDemo){dashRenderDemo();}else{dashFetchAll();}
   if(!dRefreshTimer)dashStartCountdown();
 }
@@ -449,7 +449,7 @@ function dashRenderAll(d){
   document.getElementById('dkTotal').textContent=brl(d.total);document.getElementById('dkTotalSub').textContent=`${d.mlO.length+d.shO.length} pedidos`;document.getElementById('dkML').textContent=brl(d.mlRev);document.getElementById('dkMLSub').textContent=`${d.mlO.length} pedidos`;document.getElementById('dkSH').textContent=brl(d.shRev);document.getElementById('dkSHSub').textContent=`${d.shO.length} pedidos`;
   const mEl=document.getElementById('dkMargin');mEl.textContent=pct(d.avgMargin);mEl.style.color=d.avgMargin>=20?'var(--green)':d.avgMargin>=10?'var(--gold)':'var(--danger)';
   const wML=d.total>0?d.mlRev/d.total:0.5;const target=wML*DCFG.mlMargin+(1-wML)*DCFG.shMargin;const diff=d.avgMargin-target;const dEl=document.getElementById('dkMarginDelta');dEl.textContent=(diff>=0?'+':'')+diff.toFixed(1)+'% vs meta';dEl.className='d-kpi-delta '+(diff>=0?'delta-up':'delta-down');
-  document.getElementById('dkToday').textContent=d.todayCount;document.getElementById('dkTodaySub').textContent=`${d.todayActive} em andamento`;document.getElementById('dkTicket').textContent=brl(d.avgTicket);document.getElementById('dkTicketSub').textContent='geral';
+  document.getElementById('dkToday').textContent=d.todayCount;document.getElementById('dkTodaySub').textContent=`${d.todayActive} em andamento`;document.getElementById('dkTicket').textContent=brl(d.avgTicket);
   if(d.mlRev>0){document.getElementById('dm-ml-gross').textContent=brl(d.mlRev);document.getElementById('dm-ml-fee').textContent='−'+brl(d.mlFee);document.getElementById('dm-ml-freight').textContent='−'+brl(d.mlFreight);document.getElementById('dm-ml-tax').textContent='−'+brl(d.mlTax);document.getElementById('dm-ml-acos').textContent='−'+brl(d.mlAcos);document.getElementById('dm-ml-tax-pct').textContent=DCFG.tax;document.getElementById('dm-ml-acos-pct').textContent=DCFG.acos;const nEl=document.getElementById('dm-ml-net');nEl.textContent=brl(d.mlNet)+' ('+pct(d.mlPct)+')';nEl.className='d-mrow-val '+(d.mlPct>=DCFG.mlMargin?'pos':'neg');document.getElementById('dm-ml-split').textContent=`${d.mlPremiumCount} Prem / ${d.mlClassicoCount} Clás`;document.getElementById('dm-ml-bar').style.width=Math.min(d.mlPct,50)*2+'%';}
   if(d.shRev>0){document.getElementById('dm-sh-gross').textContent=brl(d.shRev);document.getElementById('dm-sh-fee').textContent='−'+brl(d.shFee);document.getElementById('dm-sh-tax').textContent='−'+brl(d.shTax);document.getElementById('dm-sh-tax-pct').textContent=DCFG.tax;document.getElementById('dm-sh-ads').textContent='−'+brl(d.shAds);const snEl=document.getElementById('dm-sh-net');snEl.textContent=brl(d.shNet)+' ('+pct(d.shPct)+')';snEl.className='d-mrow-val '+(d.shPct>=DCFG.shMargin?'pos':'neg');document.getElementById('dm-sh-bar').style.width=Math.min(d.shPct,50)*2+'%';}
   document.getElementById('dm-cons-rev').textContent=brl(d.total);document.getElementById('dm-cons-costs').textContent='−'+brl(d.mlCosts+d.shCosts);const cmEl=document.getElementById('dm-cons-margin');cmEl.textContent=brl(d.totalNet)+' ('+pct(d.avgMargin)+')';cmEl.className='d-mrow-val '+(d.avgMargin>=15?'pos':d.avgMargin>=8?'warn':'neg');document.getElementById('dm-cons-targets').textContent=`${DCFG.mlMargin}% / ${DCFG.shMargin}%`;const stEl=document.getElementById('dm-cons-status');if(d.avgMargin>=20){stEl.textContent='✓ Saudável';stEl.className='d-mrow-val pos';}else if(d.avgMargin>=10){stEl.textContent='⚡ Atenção';stEl.className='d-mrow-val warn';}else{stEl.textContent='✗ Abaixo da meta';stEl.className='d-mrow-val neg';}
@@ -483,7 +483,7 @@ function toggleNotif(){if(!('Notification' in window)){toast('Não suportado');r
 function checkNotifs(){const today=new Date().toISOString().split('T')[0];['imann','mali','pes'].forEach(a=>{SUBTABS[a].forEach(st=>{if(st.id==='dashboard')return;const s=data[a]&&data[a][st.id];if(!s)return;s.contas.forEach(c=>{if(!c.paid&&c.dt&&c.dt<=today)new Notification('G.HUB — Vencimento',{body:c.nome+' — R$ '+parseFloat(c.valor||0).toFixed(2)});});});});}
 function restoreNotif(){if(data.notifOn&&'Notification' in window&&Notification.permission==='granted'){notifOn=true;document.getElementById('notifPill').textContent='notif on';document.getElementById('notifPill').classList.add('on');checkNotifs();notifTimer=setInterval(checkNotifs,3600000);}}
 
-if('serviceWorker' in navigator){const sw=`const C='ghub-v4';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['./']))));self.addEventListener('fetch',e=>{if(e.request.url.includes('supabase.co')||e.request.url.includes('googleapis.com')||e.request.url.includes('bling.com.br')){e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503})));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;const blob=new Blob([sw],{type:'application/javascript'});navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});}
+if('serviceWorker' in navigator){const sw=`const C='ghub-v4';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['./']))));self.addEventListener('fetch',e=>{if(e.request.url.includes('supabase.co')||e.request.url.includes('googleapis.com')||e.request.url.includes('bling.com.br')||e.request.url.includes('make.com')){e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503})));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;const blob=new Blob([sw],{type:'application/javascript'});navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});}
 
 document.addEventListener('click',e=>{if(!document.getElementById('moveMenu').contains(e.target))closeMoveMenu();});
 document.getElementById('contaModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
@@ -492,6 +492,12 @@ document.getElementById('dashConfigOverlay').addEventListener('click',function(e
 initData();dashLoadConfig();setDatePill();renderSubs();renderBoard();setSS('');
 if(data.frase)document.getElementById('fraseInput').value=data.frase;
 restoreNotif();syncNow(true);setInterval(()=>syncNow(true),120000);
+
+(function(){
+  const p=new URLSearchParams(window.location.search);
+  const code=p.get('code');
+  if(code){toast('Conectando ao Bling...');blingOAuthExchange(code);}
+})();
 </script>
 </body>
 </html>
