@@ -10,6 +10,8 @@
 <title>G.HUB — Painel Executivo</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -243,6 +245,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .d-badge.pend{background:rgba(201,168,76,0.08);color:var(--gold);border:1px solid rgba(201,168,76,0.2)}
 .d-badge.canc{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(196,90,90,0.2)}
 .d-error{background:var(--danger-bg);border:1px solid rgba(196,90,90,0.3);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--danger);font-family:'DM Mono',monospace;display:none}
+.d-map-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+.d-map-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.d-map-title{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);letter-spacing:0.5px;text-transform:uppercase}
+.d-map-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+#d-brazil-map{width:100%}
+.d-state-list{display:flex;flex-direction:column;gap:3px;max-height:260px;overflow-y:auto}
+.d-state-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)}
+.d-state-row:last-child{border-bottom:none}
+.d-state-name{font-size:10px;font-family:'DM Mono',monospace;color:var(--text2);width:24px;flex-shrink:0}
+.d-state-bar-wrap{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.d-state-bar{height:100%;border-radius:2px;background:var(--gold);transition:width 0.5s}
+.d-state-val{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);width:28px;text-align:right;flex-shrink:0}
+@media(max-width:700px){.d-map-wrap{grid-template-columns:1fr}}
 @media(max-width:600px){
   .kanban-cols{grid-template-columns:repeat(2,1fr)}
   .header,.capture-wrap,.board,.tabs-bar{padding-left:14px;padding-right:14px}
@@ -326,7 +341,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <div class="dash-config-overlay hidden" id="dashConfigOverlay">
   <div class="dash-config-card">
     <div class="dcc-title">Mooners · Conectar Bling</div>
-    <div class="dcc-sub">Cole seu token manualmente ou use o link OAuth abaixo.</div>
+    <div class="dcc-sub">Cole seu token manualmente ou conecte via OAuth.</div>
     <div class="dcc-label">Bling API Key (Bearer token)</div>
     <input class="dcc-input" type="password" id="dccApiKey" placeholder="Seu token do Bling v3...">
     <div class="dcc-row">
@@ -338,9 +353,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       <div><div class="dcc-label">Simples Nacional (%)</div><input class="dcc-input" type="number" id="dccTax" value="6"></div>
     </div>
     <button class="dcc-save" onclick="dashSaveConfig()">Salvar →</button>
-    <button class="dcc-save" style="background:var(--gold);color:#0e0e0f;margin-top:-4px" onclick="window.location.href='https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=60ebc88aead60a79dd3b7e42d5b965b7044d1897&state=ghub'">Conectar via Bling OAuth →</button>
+    <button class="dcc-save" style="background:var(--gold);color:#0e0e0f;margin-top:-4px" onclick="window.location.href='https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=c82fdccf2b1c8151f0a7e6f3065f5e44e133b8a4&state=ghub'">Conectar via Bling OAuth →</button>
     <button class="dcc-demo" onclick="dashLoadDemo()">Entrar com dados demo</button>
-    <div class="dcc-note">Token salvo localmente no browser.</div>
+    <div class="dcc-note">Token salvo localmente. OAuth via Make → Supabase.</div>
   </div>
 </div>
 
@@ -398,7 +413,7 @@ function saveConta(){const nome=document.getElementById('mNome').value.trim();if
 // ═══ DASHBOARD ═══
 let DCFG={apiKey:'',mlMargin:25,shMargin:20,acos:12,tax:6,isDemo:false};
 let DPERIOD=7,DCHANNELS={ml:true,sh:true};
-let dRevChart=null,dMixChart=null,dRefreshTimer=null,dCountdown=300;
+let dRevChart=null,dMixChart=null,dRefreshTimer=null;
 
 function dashLoadConfig(){const s=localStorage.getItem('mooners_dcfg');if(s){try{DCFG={...DCFG,...JSON.parse(s)}}catch(e){}}}
 function dashSaveConfig(){DCFG.apiKey=document.getElementById('dccApiKey').value.trim();DCFG.mlMargin=parseFloat(document.getElementById('dccMlMargin').value)||25;DCFG.shMargin=parseFloat(document.getElementById('dccShMargin').value)||20;DCFG.acos=parseFloat(document.getElementById('dccAcos').value)||12;DCFG.tax=parseFloat(document.getElementById('dccTax').value)||6;DCFG.isDemo=false;localStorage.setItem('mooners_dcfg',JSON.stringify(DCFG));document.getElementById('dashConfigOverlay').classList.add('hidden');dashFetchAll();dashStartCountdown();}
@@ -409,51 +424,137 @@ function dashToggleChannel(ch){DCHANNELS[ch]=!DCHANNELS[ch];const btn=document.g
 
 async function blingOAuthExchange(code){
   const makeWebhook='https://hook.us2.make.com/toprraxr3pd3mlt5ke1uh5fijcp83746';
+  window.location.href=makeWebhook+'?code='+encodeURIComponent(code);
+}
+async function loadTokenFromSupabase(){
   try{
-    const res=await fetch(makeWebhook+'?code='+encodeURIComponent(code));
-    const j=await res.json();
-    if(j.access_token){
-      DCFG.apiKey=j.access_token;DCFG.isDemo=false;
-      if(j.refresh_token)DCFG.refreshToken=j.refresh_token;
+    const r=await fetch(SUPA_URL+'/rest/v1/ghq_data?id=eq.bling_token&select=payload',{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const rows=await r.json();
+    if(rows.length&&rows[0].payload&&rows[0].payload.access_token){
+      DCFG.apiKey=rows[0].payload.access_token;DCFG.isDemo=false;
       localStorage.setItem('mooners_dcfg',JSON.stringify(DCFG));
-      window.history.replaceState({},'',window.location.pathname);
-      toast('Bling conectado ✓');
-      area='imann';sub='dashboard';renderSubs();renderBoard();
-    } else { toast('Erro: '+(j.error||JSON.stringify(j))); }
-  }catch(e){toast('Erro OAuth: '+e.message);}
+      return true;
+    }
+    return false;
+  }catch(e){return false;}
 }
 
-function dashDateRange(days){const end=new Date(),start=new Date();start.setDate(start.getDate()-days);const fmt=d=>d.toISOString().split('T')[0];return{start:fmt(start),end:fmt(end)};}
 async function dashBlingFetch(ep){const r=await fetch('https://www.bling.com.br/Api/v3/'+ep,{headers:{'Authorization':'Bearer '+DCFG.apiKey,'Accept':'application/json'}});if(!r.ok)throw new Error('Bling '+r.status);return r.json();}
+function dashDateRange(days){const end=new Date(),start=new Date();start.setDate(start.getDate()-days);const fmt=d=>d.toISOString().split('T')[0];return{start:fmt(start),end:fmt(end)};}
 async function dashGetAllPedidos(days){const{start,end}=dashDateRange(days);let page=1,all=[];while(true){const res=await dashBlingFetch(`pedidos/vendas?pagina=${page}&limite=100&dataInicio=${start}&dataFim=${end}`);const items=res?.data?.data||res?.data||[];if(!items.length)break;all=all.concat(items);if(items.length<100)break;page++;}return all;}
-async function dashFetchAll(){if(DCFG.isDemo){dashRenderDemo();return;}if(!DCFG.apiKey){document.getElementById('dashConfigOverlay').classList.remove('hidden');return;}dashShowError('');try{const pedidos=await dashGetAllPedidos(DPERIOD);const norm=pedidos.map(p=>({numero:p.numero||p.id,loja:dashGuessChannel(p),data:dashFmtDate(p.data),dateBrut:new Date(p.data),produto:dashGetProd(p),valor:parseFloat(p.totalVenda||p.total||0),isFrete:dashIsFreteGratis(p),status:dashMapStatus(p.situacao)}));const d=dashProcess(norm);window._dashData=d;dashRenderAll(d);}catch(err){dashShowError('Erro Bling: '+err.message);}}
+async function dashFetchAll(){if(DCFG.isDemo){dashRenderDemo();return;}if(!DCFG.apiKey){document.getElementById('dashConfigOverlay').classList.remove('hidden');return;}dashShowError('');try{const pedidos=await dashGetAllPedidos(DPERIOD);const norm=pedidos.map(p=>({numero:p.numero||p.id,loja:dashGuessChannel(p),data:dashFmtDate(p.data),dateBrut:new Date(p.data),produto:dashGetProd(p),valor:parseFloat(p.totalVenda||p.total||0),isFrete:dashIsFreteGratis(p),estado:dashGetEstado(p),status:dashMapStatus(p.situacao)}));const d=dashProcess(norm);window._dashData=d;dashRenderAll(d);}catch(err){dashShowError('Erro Bling: '+err.message);}}
 function dashGuessChannel(p){const loja=(p.loja?.nome||p.ecommerce?.nome||'').toLowerCase();if(loja.includes('shopee'))return'Shopee';if(loja.includes('mercado')||loja.includes('meli')||loja.includes('ml'))return'Mercado Livre';return'Mercado Livre';}
 function dashGetProd(p){return p.itens?.length?p.itens[0].descricao||'Óculos Mooners':'Óculos Mooners';}
+function dashGetEstado(p){return(p.transporte?.destinatario?.uf||p.cliente?.uf||p.endereco?.uf||'').toUpperCase();}
 function dashIsFreteGratis(p){return parseFloat(p.valorFrete||0)===0;}
 function dashMapStatus(s){return{9:'Atendido',15:'Em andamento',12:'Cancelado',6:'Em andamento'}[s]||'Em andamento';}
 function dashFmtDate(d){if(!d)return'';return new Date(d).toLocaleDateString('pt-BR');}
 
-function dashRenderDemo(){const prods=['Night Drive','Night Drive Novo','Leitura Blue Light','Crystal Colorido V1003','Solar Black Edition'];const now=new Date();const orders=[];for(let i=0;i<Math.round(DPERIOD*3.5);i++){const d=new Date(now);d.setDate(d.getDate()-Math.floor(Math.random()*DPERIOD));const ch=Math.random()<0.72?'Mercado Livre':'Shopee';const prod=prods[Math.floor(Math.random()*prods.length)];const valMap={'Night Drive':69,'Night Drive Novo':79,'Leitura Blue Light':56,'Crystal Colorido V1003':56,'Solar Black Edition':49};const valor=ch==='Mercado Livre'?(valMap[prod]||56):(prod==='Night Drive Novo'?72:55);const statuses=['Atendido','Atendido','Atendido','Em andamento','Cancelado'];orders.push({numero:'MN'+String(10000+i),loja:ch,data:d.toLocaleDateString('pt-BR'),dateBrut:d,produto:prod,valor,isFrete:Math.random()>0.15,status:statuses[Math.floor(Math.random()*statuses.length)]});}orders.sort((a,b)=>b.dateBrut-a.dateBrut);const d=dashProcess(orders);window._dashData=d;dashRenderAll(d);}
+function dashRenderDemo(){
+  const prods=['Night Drive','Night Drive Novo','Leitura Blue Light','Crystal Colorido V1003','Solar Black Edition'];
+  const estados=['SP','SP','SP','MG','RJ','PR','SC','RS','BA','GO','PE','CE','DF','ES','MT'];
+  const now=new Date();const orders=[];
+  for(let i=0;i<Math.round(DPERIOD*3.5);i++){
+    const d=new Date(now);d.setDate(d.getDate()-Math.floor(Math.random()*DPERIOD));
+    const ch=Math.random()<0.72?'Mercado Livre':'Shopee';
+    const prod=prods[Math.floor(Math.random()*prods.length)];
+    const valMap={'Night Drive':69,'Night Drive Novo':79,'Leitura Blue Light':56,'Crystal Colorido V1003':56,'Solar Black Edition':49};
+    const valor=ch==='Mercado Livre'?(valMap[prod]||56):(prod==='Night Drive Novo'?72:55);
+    const statuses=['Atendido','Atendido','Atendido','Em andamento','Cancelado'];
+    orders.push({numero:'MN'+String(10000+i),loja:ch,data:d.toLocaleDateString('pt-BR'),dateBrut:d,produto:prod,valor,isFrete:Math.random()>0.15,estado:estados[Math.floor(Math.random()*estados.length)],status:statuses[Math.floor(Math.random()*statuses.length)]});
+  }
+  orders.sort((a,b)=>b.dateBrut-a.dateBrut);
+  const d=dashProcess(orders);window._dashData=d;dashRenderAll(d);
+}
 
-function dashProcess(orders){const today=new Date().toLocaleDateString('pt-BR');let mlO=orders.filter(o=>o.loja==='Mercado Livre');let shO=orders.filter(o=>o.loja==='Shopee');if(!DCHANNELS.ml)mlO=[];if(!DCHANNELS.sh)shO=[];const mlRev=mlO.reduce((s,o)=>s+o.valor,0);const shRev=shO.reduce((s,o)=>s+o.valor,0);const total=mlRev+shRev;const mlPremium=mlO.filter(o=>o.isFrete);const mlClassico=mlO.filter(o=>!o.isFrete);const mlFee=mlRev*0.19;const mlFreight=mlPremium.length*12.35;const mlTax=mlRev*(DCFG.tax/100);const mlAcos=mlRev*(DCFG.acos/100);const mlCosts=mlFee+mlFreight+mlTax+mlAcos;const mlNet=mlRev-mlCosts;const mlPct=mlRev>0?mlNet/mlRev*100:0;const shFee=shRev*0.20+shO.length*4;const shTax=shRev*(DCFG.tax/100);const shAds=shRev*0.05;const shCosts=shFee+shTax+shAds;const shNet=shRev-shCosts;const shPct=shRev>0?shNet/shRev*100:0;const totalNet=mlNet+shNet;const avgMargin=total>0?totalNet/total*100:0;const days={};[...mlO,...shO].forEach(o=>{const k=o.dateBrut?o.dateBrut.toLocaleDateString('pt-BR'):o.data;if(!days[k])days[k]={ml:0,sh:0};if(o.loja==='Mercado Livre')days[k].ml+=o.valor;else days[k].sh+=o.valor;});const sorted=Object.keys(days).sort((a,b)=>{const pa=a.split('/').reverse().join('-'),pb=b.split('/').reverse().join('-');return pa.localeCompare(pb);}).slice(-DPERIOD);const todayO=orders.filter(o=>o.data===today);return{mlRev,shRev,total,mlO,shO,mlFee,mlFreight,mlTax,mlAcos,mlCosts,mlNet,mlPct,mlPremiumCount:mlPremium.length,mlClassicoCount:mlClassico.length,shFee,shTax,shAds,shCosts,shNet,shPct,totalNet,avgMargin,dailyLabels:sorted,dailyML:sorted.map(d=>Math.round(days[d]?.ml||0)),dailySH:sorted.map(d=>Math.round(days[d]?.sh||0)),todayCount:todayO.length,todayActive:todayO.filter(o=>o.status==='Em andamento').length,avgTicket:(mlO.length+shO.length)>0?total/(mlO.length+shO.length):0,orders:orders.slice(0,50)};}
+function dashProcess(orders){
+  const today=new Date().toLocaleDateString('pt-BR');
+  let mlO=orders.filter(o=>o.loja==='Mercado Livre');let shO=orders.filter(o=>o.loja==='Shopee');
+  if(!DCHANNELS.ml)mlO=[];if(!DCHANNELS.sh)shO=[];
+  const mlRev=mlO.reduce((s,o)=>s+o.valor,0);const shRev=shO.reduce((s,o)=>s+o.valor,0);const total=mlRev+shRev;
+  const mlPremium=mlO.filter(o=>o.isFrete);const mlClassico=mlO.filter(o=>!o.isFrete);
+  const mlFee=mlRev*0.19;const mlFreight=mlPremium.length*12.35;const mlTax=mlRev*(DCFG.tax/100);const mlAcos=mlRev*(DCFG.acos/100);const mlCosts=mlFee+mlFreight+mlTax+mlAcos;const mlNet=mlRev-mlCosts;const mlPct=mlRev>0?mlNet/mlRev*100:0;
+  const shFee=shRev*0.20+shO.length*4;const shTax=shRev*(DCFG.tax/100);const shAds=shRev*0.05;const shCosts=shFee+shTax+shAds;const shNet=shRev-shCosts;const shPct=shRev>0?shNet/shRev*100:0;
+  const totalNet=mlNet+shNet;const avgMargin=total>0?totalNet/total*100:0;
+  const days={};[...mlO,...shO].forEach(o=>{const k=o.dateBrut?o.dateBrut.toLocaleDateString('pt-BR'):o.data;if(!days[k])days[k]={ml:0,sh:0};if(o.loja==='Mercado Livre')days[k].ml+=o.valor;else days[k].sh+=o.valor;});
+  const sorted=Object.keys(days).sort((a,b)=>{const pa=a.split('/').reverse().join('-'),pb=b.split('/').reverse().join('-');return pa.localeCompare(pb);}).slice(-DPERIOD);
+  const todayO=orders.filter(o=>o.data===today);
+  const stateMap={};orders.forEach(o=>{const st=o.estado||'';if(st&&st.length===2)stateMap[st]=(stateMap[st]||0)+1;});
+  return{mlRev,shRev,total,mlO,shO,mlFee,mlFreight,mlTax,mlAcos,mlCosts,mlNet,mlPct,mlPremiumCount:mlPremium.length,mlClassicoCount:mlClassico.length,shFee,shTax,shAds,shCosts,shNet,shPct,totalNet,avgMargin,dailyLabels:sorted,dailyML:sorted.map(d=>Math.round(days[d]?.ml||0)),dailySH:sorted.map(d=>Math.round(days[d]?.sh||0)),todayCount:todayO.length,todayActive:todayO.filter(o=>o.status==='Em andamento').length,avgTicket:(mlO.length+shO.length)>0?total/(mlO.length+shO.length):0,stateMap,orders:orders.slice(0,50)};
+}
 
 function renderDashboard(){
   dashLoadConfig();const needsConfig=!DCFG.apiKey&&!DCFG.isDemo;
-  document.getElementById('board').innerHTML=`<div class="dash-wrap" id="dashInner"><div class="d-error" id="dashError"></div><div class="dash-controls"><button class="dp-btn${DPERIOD===7?' active':''}" onclick="dashSetPeriod(7,this)">7d</button><button class="dp-btn${DPERIOD===15?' active':''}" onclick="dashSetPeriod(15,this)">15d</button><button class="dp-btn${DPERIOD===30?' active':''}" onclick="dashSetPeriod(30,this)">30d</button><button class="dp-btn${DPERIOD===60?' active':''}" onclick="dashSetPeriod(60,this)">60d</button><div class="dc-sep"></div><button class="dch-btn${DCHANNELS.ml?' on-ml':''}" id="dch-ml" onclick="dashToggleChannel('ml')"><span style="width:6px;height:6px;border-radius:50%;background:#ffe600;display:inline-block"></span>ML</button><button class="dch-btn${DCHANNELS.sh?' on-sh':''}" id="dch-sh" onclick="dashToggleChannel('sh')"><span style="width:6px;height:6px;border-radius:50%;background:#f26522;display:inline-block"></span>Shopee</button><div class="dash-live"><div class="dash-live-dot"></div>LIVE</div><button class="dash-settings-btn" onclick="dashOpenConfig()">⚙ config</button></div><div class="d-kpi-grid"><div class="d-kpi k-total"><div class="d-kpi-lbl">Faturamento total</div><div class="d-kpi-val" id="dkTotal">—</div><div class="d-kpi-sub" id="dkTotalSub">carregando...</div></div><div class="d-kpi k-ml"><div class="d-kpi-lbl">Mercado Livre</div><div class="d-kpi-val" id="dkML">—</div><div class="d-kpi-sub" id="dkMLSub">—</div></div><div class="d-kpi k-sh"><div class="d-kpi-lbl">Shopee</div><div class="d-kpi-val" id="dkSH">—</div><div class="d-kpi-sub" id="dkSHSub">—</div></div><div class="d-kpi k-margin"><div class="d-kpi-lbl">Margem líquida</div><div class="d-kpi-val" id="dkMargin">—</div><div class="d-kpi-delta delta-neu" id="dkMarginDelta">vs meta</div></div><div class="d-kpi"><div class="d-kpi-lbl">Pedidos hoje</div><div class="d-kpi-val" id="dkToday">—</div><div class="d-kpi-sub" id="dkTodaySub">—</div></div><div class="d-kpi"><div class="d-kpi-lbl">Ticket médio</div><div class="d-kpi-val" id="dkTicket">—</div><div class="d-kpi-sub" id="dkTicketSub">—</div></div></div><div class="d-charts"><div class="d-chart-card"><div class="d-chart-head"><div class="d-chart-title">Faturamento diário</div><div class="d-chart-legend"><div class="d-leg"><div class="d-leg-dot" style="background:#ffe600"></div>ML</div><div class="d-leg"><div class="d-leg-dot" style="background:#f26522"></div>Shopee</div></div></div><div style="position:relative;width:100%;height:200px"><canvas id="dChartRev" role="img" aria-label="Faturamento diário">Carregando</canvas></div></div><div class="d-chart-card"><div class="d-chart-head"><div class="d-chart-title">Mix de canal</div></div><div class="d-donut-wrap"><canvas id="dChartMix" role="img" aria-label="Mix de canal" style="max-width:180px;max-height:180px">Carregando</canvas><div class="d-donut-center"><div class="d-donut-val" id="dDonutVal">—</div><div class="d-donut-lbl">TOTAL</div></div></div></div></div><div class="d-margins"><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#ffe600"></div><div class="d-mc-name">Mercado Livre · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-ml-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa ML 19%</span><span class="d-mrow-val neg" id="dm-ml-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Frete (Premium)</span><span class="d-mrow-val neg" id="dm-ml-freight">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-ml-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-ml-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">ACOS <span id="dm-ml-acos-pct">12</span>%</span><span class="d-mrow-val neg" id="dm-ml-acos">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-ml-net">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Premium / Clássico</span><span class="d-mrow-val" id="dm-ml-split">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-ml-bar" style="background:#ffe600;width:0%"></div></div></div><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#f26522"></div><div class="d-mc-name">Shopee · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-sh-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa 20%+R$4/u</span><span class="d-mrow-val neg" id="dm-sh-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-sh-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-sh-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Ads ~5%</span><span class="d-mrow-val neg" id="dm-sh-ads">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-sh-net">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-sh-bar" style="background:#f26522;width:0%"></div></div></div><div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:var(--green)"></div><div class="d-mc-name">Consolidado</div></div><div class="d-mrow"><span class="d-mrow-lbl">Receita total</span><span class="d-mrow-val" id="dm-cons-rev">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Custos estimados</span><span class="d-mrow-val neg" id="dm-cons-costs">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Margem global</span><span class="d-mrow-val pos" id="dm-cons-margin">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Meta ML / Shopee</span><span class="d-mrow-val" id="dm-cons-targets">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Status</span><span class="d-mrow-val" id="dm-cons-status">—</span></div></div></div><div class="d-orders-card"><div class="d-orders-head"><div class="d-orders-title">Pedidos recentes</div><div class="d-orders-ct" id="dOrdersCt">—</div></div><div style="overflow-x:auto"><table class="d-table"><thead><tr><th>Nº</th><th>Canal</th><th>Data</th><th>Produto</th><th>Frete</th><th>Valor</th><th>Status</th></tr></thead><tbody id="dOrdersBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Carregando...</td></tr></tbody></table></div></div></div>`;
+  document.getElementById('board').innerHTML=`<div class="dash-wrap" id="dashInner">
+    <div class="d-error" id="dashError"></div>
+    <div class="dash-controls">
+      <button class="dp-btn${DPERIOD===7?' active':''}" onclick="dashSetPeriod(7,this)">7d</button>
+      <button class="dp-btn${DPERIOD===15?' active':''}" onclick="dashSetPeriod(15,this)">15d</button>
+      <button class="dp-btn${DPERIOD===30?' active':''}" onclick="dashSetPeriod(30,this)">30d</button>
+      <button class="dp-btn${DPERIOD===60?' active':''}" onclick="dashSetPeriod(60,this)">60d</button>
+      <div class="dc-sep"></div>
+      <button class="dch-btn${DCHANNELS.ml?' on-ml':''}" id="dch-ml" onclick="dashToggleChannel('ml')"><span style="width:6px;height:6px;border-radius:50%;background:#ffe600;display:inline-block"></span>ML</button>
+      <button class="dch-btn${DCHANNELS.sh?' on-sh':''}" id="dch-sh" onclick="dashToggleChannel('sh')"><span style="width:6px;height:6px;border-radius:50%;background:#f26522;display:inline-block"></span>Shopee</button>
+      <div class="dash-live"><div class="dash-live-dot"></div>LIVE</div>
+      <button class="dash-settings-btn" onclick="dashOpenConfig()">⚙ config</button>
+    </div>
+    <div class="d-kpi-grid">
+      <div class="d-kpi k-total"><div class="d-kpi-lbl">Faturamento total</div><div class="d-kpi-val" id="dkTotal">—</div><div class="d-kpi-sub" id="dkTotalSub">carregando...</div></div>
+      <div class="d-kpi k-ml"><div class="d-kpi-lbl">Mercado Livre</div><div class="d-kpi-val" id="dkML">—</div><div class="d-kpi-sub" id="dkMLSub">—</div></div>
+      <div class="d-kpi k-sh"><div class="d-kpi-lbl">Shopee</div><div class="d-kpi-val" id="dkSH">—</div><div class="d-kpi-sub" id="dkSHSub">—</div></div>
+      <div class="d-kpi k-margin"><div class="d-kpi-lbl">Margem líquida</div><div class="d-kpi-val" id="dkMargin">—</div><div class="d-kpi-delta delta-neu" id="dkMarginDelta">vs meta</div></div>
+      <div class="d-kpi"><div class="d-kpi-lbl">Pedidos hoje</div><div class="d-kpi-val" id="dkToday">—</div><div class="d-kpi-sub" id="dkTodaySub">—</div></div>
+      <div class="d-kpi"><div class="d-kpi-lbl">Ticket médio</div><div class="d-kpi-val" id="dkTicket">—</div></div>
+    </div>
+    <div class="d-charts">
+      <div class="d-chart-card">
+        <div class="d-chart-head"><div class="d-chart-title">Faturamento diário</div><div class="d-chart-legend"><div class="d-leg"><div class="d-leg-dot" style="background:#ffe600"></div>ML</div><div class="d-leg"><div class="d-leg-dot" style="background:#f26522"></div>Shopee</div></div></div>
+        <div style="position:relative;width:100%;height:200px"><canvas id="dChartRev" role="img" aria-label="Faturamento diário">Carregando</canvas></div>
+      </div>
+      <div class="d-chart-card">
+        <div class="d-chart-head"><div class="d-chart-title">Mix de canal</div></div>
+        <div class="d-donut-wrap"><canvas id="dChartMix" role="img" aria-label="Mix de canal" style="max-width:180px;max-height:180px">Carregando</canvas><div class="d-donut-center"><div class="d-donut-val" id="dDonutVal">—</div><div class="d-donut-lbl">TOTAL</div></div></div>
+      </div>
+    </div>
+    <div class="d-margins">
+      <div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#ffe600"></div><div class="d-mc-name">Mercado Livre · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-ml-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa ML 19%</span><span class="d-mrow-val neg" id="dm-ml-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Frete Premium</span><span class="d-mrow-val neg" id="dm-ml-freight">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-ml-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-ml-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">ACOS <span id="dm-ml-acos-pct">12</span>%</span><span class="d-mrow-val neg" id="dm-ml-acos">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-ml-net">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Premium/Clássico</span><span class="d-mrow-val" id="dm-ml-split">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-ml-bar" style="background:#ffe600;width:0%"></div></div></div>
+      <div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:#f26522"></div><div class="d-mc-name">Shopee · custos</div></div><div class="d-mrow"><span class="d-mrow-lbl">Bruto</span><span class="d-mrow-val" id="dm-sh-gross">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Taxa 20%+R$4/u</span><span class="d-mrow-val neg" id="dm-sh-fee">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Simples <span id="dm-sh-tax-pct">6</span>%</span><span class="d-mrow-val neg" id="dm-sh-tax">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Ads ~5%</span><span class="d-mrow-val neg" id="dm-sh-ads">—</span></div><div class="d-mrow"><span class="d-mrow-lbl" style="color:var(--text)">Líquido</span><span class="d-mrow-val" id="dm-sh-net">—</span></div><div class="d-bar-wrap"><div class="d-bar" id="dm-sh-bar" style="background:#f26522;width:0%"></div></div></div>
+      <div class="d-margin-card"><div class="d-mc-head"><div class="d-mc-dot" style="background:var(--green)"></div><div class="d-mc-name">Consolidado</div></div><div class="d-mrow"><span class="d-mrow-lbl">Receita total</span><span class="d-mrow-val" id="dm-cons-rev">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Custos estimados</span><span class="d-mrow-val neg" id="dm-cons-costs">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Margem global</span><span class="d-mrow-val pos" id="dm-cons-margin">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Meta ML/Shopee</span><span class="d-mrow-val" id="dm-cons-targets">—</span></div><div class="d-mrow"><span class="d-mrow-lbl">Status</span><span class="d-mrow-val" id="dm-cons-status">—</span></div></div>
+    </div>
+    <div class="d-map-card">
+      <div class="d-map-head"><div class="d-map-title">Pedidos por estado</div></div>
+      <div class="d-map-wrap">
+        <div id="d-brazil-map"></div>
+        <div class="d-state-list" id="d-state-list"></div>
+      </div>
+    </div>
+    <div class="d-orders-card">
+      <div class="d-orders-head"><div class="d-orders-title">Pedidos recentes</div><div class="d-orders-ct" id="dOrdersCt">—</div></div>
+      <div style="overflow-x:auto"><table class="d-table"><thead><tr><th>Nº</th><th>Canal</th><th>Data</th><th>Produto</th><th>Frete</th><th>Valor</th><th>Status</th></tr></thead><tbody id="dOrdersBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Carregando...</td></tr></tbody></table></div>
+    </div>
+  </div>`;
   if(needsConfig){dashOpenConfig();}else if(DCFG.isDemo){dashRenderDemo();}else{dashFetchAll();}
   if(!dRefreshTimer)dashStartCountdown();
 }
 
 function dashRenderAll(d){
   const brl=v=>'R$'+Math.round(v).toLocaleString('pt-BR');const pct=v=>v.toFixed(1)+'%';
-  document.getElementById('dkTotal').textContent=brl(d.total);document.getElementById('dkTotalSub').textContent=`${d.mlO.length+d.shO.length} pedidos`;document.getElementById('dkML').textContent=brl(d.mlRev);document.getElementById('dkMLSub').textContent=`${d.mlO.length} pedidos`;document.getElementById('dkSH').textContent=brl(d.shRev);document.getElementById('dkSHSub').textContent=`${d.shO.length} pedidos`;
+  document.getElementById('dkTotal').textContent=brl(d.total);document.getElementById('dkTotalSub').textContent=`${d.mlO.length+d.shO.length} pedidos`;
+  document.getElementById('dkML').textContent=brl(d.mlRev);document.getElementById('dkMLSub').textContent=`${d.mlO.length} pedidos`;
+  document.getElementById('dkSH').textContent=brl(d.shRev);document.getElementById('dkSHSub').textContent=`${d.shO.length} pedidos`;
   const mEl=document.getElementById('dkMargin');mEl.textContent=pct(d.avgMargin);mEl.style.color=d.avgMargin>=20?'var(--green)':d.avgMargin>=10?'var(--gold)':'var(--danger)';
-  const wML=d.total>0?d.mlRev/d.total:0.5;const target=wML*DCFG.mlMargin+(1-wML)*DCFG.shMargin;const diff=d.avgMargin-target;const dEl=document.getElementById('dkMarginDelta');dEl.textContent=(diff>=0?'+':'')+diff.toFixed(1)+'% vs meta';dEl.className='d-kpi-delta '+(diff>=0?'delta-up':'delta-down');
-  document.getElementById('dkToday').textContent=d.todayCount;document.getElementById('dkTodaySub').textContent=`${d.todayActive} em andamento`;document.getElementById('dkTicket').textContent=brl(d.avgTicket);
-  if(d.mlRev>0){document.getElementById('dm-ml-gross').textContent=brl(d.mlRev);document.getElementById('dm-ml-fee').textContent='−'+brl(d.mlFee);document.getElementById('dm-ml-freight').textContent='−'+brl(d.mlFreight);document.getElementById('dm-ml-tax').textContent='−'+brl(d.mlTax);document.getElementById('dm-ml-acos').textContent='−'+brl(d.mlAcos);document.getElementById('dm-ml-tax-pct').textContent=DCFG.tax;document.getElementById('dm-ml-acos-pct').textContent=DCFG.acos;const nEl=document.getElementById('dm-ml-net');nEl.textContent=brl(d.mlNet)+' ('+pct(d.mlPct)+')';nEl.className='d-mrow-val '+(d.mlPct>=DCFG.mlMargin?'pos':'neg');document.getElementById('dm-ml-split').textContent=`${d.mlPremiumCount} Prem / ${d.mlClassicoCount} Clás`;document.getElementById('dm-ml-bar').style.width=Math.min(d.mlPct,50)*2+'%';}
+  const wML=d.total>0?d.mlRev/d.total:0.5;const target=wML*DCFG.mlMargin+(1-wML)*DCFG.shMargin;const diff=d.avgMargin-target;
+  const dEl=document.getElementById('dkMarginDelta');dEl.textContent=(diff>=0?'+':'')+diff.toFixed(1)+'% vs meta';dEl.className='d-kpi-delta '+(diff>=0?'delta-up':'delta-down');
+  document.getElementById('dkToday').textContent=d.todayCount;document.getElementById('dkTodaySub').textContent=`${d.todayActive} em andamento`;
+  document.getElementById('dkTicket').textContent=brl(d.avgTicket);
+  if(d.mlRev>0){document.getElementById('dm-ml-gross').textContent=brl(d.mlRev);document.getElementById('dm-ml-fee').textContent='−'+brl(d.mlFee);document.getElementById('dm-ml-freight').textContent='−'+brl(d.mlFreight);document.getElementById('dm-ml-tax').textContent='−'+brl(d.mlTax);document.getElementById('dm-ml-acos').textContent='−'+brl(d.mlAcos);document.getElementById('dm-ml-tax-pct').textContent=DCFG.tax;document.getElementById('dm-ml-acos-pct').textContent=DCFG.acos;const nEl=document.getElementById('dm-ml-net');nEl.textContent=brl(d.mlNet)+' ('+pct(d.mlPct)+')';nEl.className='d-mrow-val '+(d.mlPct>=DCFG.mlMargin?'pos':'neg');document.getElementById('dm-ml-split').textContent=`${d.mlPremiumCount}P/${d.mlClassicoCount}C`;document.getElementById('dm-ml-bar').style.width=Math.min(d.mlPct,50)*2+'%';}
   if(d.shRev>0){document.getElementById('dm-sh-gross').textContent=brl(d.shRev);document.getElementById('dm-sh-fee').textContent='−'+brl(d.shFee);document.getElementById('dm-sh-tax').textContent='−'+brl(d.shTax);document.getElementById('dm-sh-tax-pct').textContent=DCFG.tax;document.getElementById('dm-sh-ads').textContent='−'+brl(d.shAds);const snEl=document.getElementById('dm-sh-net');snEl.textContent=brl(d.shNet)+' ('+pct(d.shPct)+')';snEl.className='d-mrow-val '+(d.shPct>=DCFG.shMargin?'pos':'neg');document.getElementById('dm-sh-bar').style.width=Math.min(d.shPct,50)*2+'%';}
-  document.getElementById('dm-cons-rev').textContent=brl(d.total);document.getElementById('dm-cons-costs').textContent='−'+brl(d.mlCosts+d.shCosts);const cmEl=document.getElementById('dm-cons-margin');cmEl.textContent=brl(d.totalNet)+' ('+pct(d.avgMargin)+')';cmEl.className='d-mrow-val '+(d.avgMargin>=15?'pos':d.avgMargin>=8?'warn':'neg');document.getElementById('dm-cons-targets').textContent=`${DCFG.mlMargin}% / ${DCFG.shMargin}%`;const stEl=document.getElementById('dm-cons-status');if(d.avgMargin>=20){stEl.textContent='✓ Saudável';stEl.className='d-mrow-val pos';}else if(d.avgMargin>=10){stEl.textContent='⚡ Atenção';stEl.className='d-mrow-val warn';}else{stEl.textContent='✗ Abaixo da meta';stEl.className='d-mrow-val neg';}
-  dashRenderCharts(d);dashRenderOrders(d.orders);document.getElementById('dDonutVal').textContent=d.total>=1000?'R$'+(d.total/1000).toFixed(1)+'k':'R$'+Math.round(d.total);
+  document.getElementById('dm-cons-rev').textContent=brl(d.total);document.getElementById('dm-cons-costs').textContent='−'+brl(d.mlCosts+d.shCosts);
+  const cmEl=document.getElementById('dm-cons-margin');cmEl.textContent=brl(d.totalNet)+' ('+pct(d.avgMargin)+')';cmEl.className='d-mrow-val '+(d.avgMargin>=15?'pos':d.avgMargin>=8?'warn':'neg');
+  document.getElementById('dm-cons-targets').textContent=`${DCFG.mlMargin}%/${DCFG.shMargin}%`;
+  const stEl=document.getElementById('dm-cons-status');if(d.avgMargin>=20){stEl.textContent='✓ Saudável';stEl.className='d-mrow-val pos';}else if(d.avgMargin>=10){stEl.textContent='⚡ Atenção';stEl.className='d-mrow-val warn';}else{stEl.textContent='✗ Abaixo da meta';stEl.className='d-mrow-val neg';}
+  dashRenderCharts(d);dashRenderOrders(d.orders);dashRenderMap(d.stateMap||{});
+  document.getElementById('dDonutVal').textContent=d.total>=1000?'R$'+(d.total/1000).toFixed(1)+'k':'R$'+Math.round(d.total);
 }
 
 function dashRenderCharts(d){
@@ -471,8 +572,40 @@ function dashRenderOrders(orders){
   tbody.innerHTML=orders.map(o=>{const ch=o.loja==='Mercado Livre'?'<span class="d-badge ml">ML</span>':'<span class="d-badge sh">Shopee</span>';const fr=o.loja==='Mercado Livre'?(o.isFrete?'<span style="color:var(--mali);font-size:9px">Premium</span>':'<span style="color:var(--text3);font-size:9px">Clássico</span>'):'<span style="color:var(--text3);font-size:9px">—</span>';const st=o.status==='Atendido'?'<span class="d-badge ok">Atendido</span>':o.status==='Cancelado'?'<span class="d-badge canc">Cancelado</span>':'<span class="d-badge pend">Andamento</span>';return`<tr><td style="font-size:10px">#${o.numero}</td><td>${ch}</td><td>${o.data}</td><td class="td-main">${o.produto}</td><td>${fr}</td><td class="td-val">R$ ${Number(o.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${st}</td></tr>`;}).join('');
 }
 
+function dashRenderMap(stateMap){
+  const mapEl=document.getElementById('d-brazil-map');const listEl=document.getElementById('d-state-list');if(!mapEl||!listEl)return;
+  const states=[
+    {uf:'AC',cx:108,cy:205},{uf:'AL',cx:318,cy:192},{uf:'AM',cx:142,cy:140},{uf:'AP',cx:205,cy:88},
+    {uf:'BA',cx:305,cy:195},{uf:'CE',cx:318,cy:152},{uf:'DF',cx:270,cy:206},{uf:'ES',cx:312,cy:218},
+    {uf:'GO',cx:270,cy:202},{uf:'MA',cx:272,cy:143},{uf:'MG',cx:295,cy:212},{uf:'MS',cx:245,cy:232},
+    {uf:'MT',cx:220,cy:182},{uf:'PA',cx:212,cy:122},{uf:'PB',cx:328,cy:160},{uf:'PE',cx:312,cy:167},
+    {uf:'PI',cx:282,cy:153},{uf:'PR',cx:255,cy:258},{uf:'RJ',cx:308,cy:230},{uf:'RN',cx:332,cy:148},
+    {uf:'RO',cx:162,cy:180},{uf:'RR',cx:162,cy:87},{uf:'RS',cx:252,cy:292},{uf:'SC',cx:260,cy:270},
+    {uf:'SE',cx:323,cy:184},{uf:'SP',cx:278,cy:240},{uf:'TO',cx:270,cy:168}
+  ];
+  const maxVal=Math.max(1,...Object.values(stateMap));
+  const dots=states.map(s=>{
+    const val=stateMap[s.uf]||0;const alpha=val>0?0.15+val/maxVal*0.8:0.05;
+    const fill=val>0?`rgba(201,168,76,${alpha})`:'rgba(42,42,46,0.6)';
+    const r=val>0?4+val/maxVal*8:3;
+    return`<circle cx="${s.cx}" cy="${s.cy}" r="${r}" fill="${fill}" stroke="${val>0?'rgba(201,168,76,0.5)':'rgba(60,60,65,0.5)'}" stroke-width="0.8">
+      <title>${s.uf}: ${val} pedido${val!==1?'s':''}</title>
+    </circle>
+    <text x="${s.cx}" y="${s.cy+3}" text-anchor="middle" font-size="4.5" fill="${val>0?'#f0ede8':'#5c5a56'}" font-family="DM Mono,monospace" pointer-events="none">${s.uf}</text>`;
+  }).join('');
+  mapEl.innerHTML=`<svg viewBox="80 65 280 260" style="width:100%;background:transparent">${dots}</svg>`;
+  const sortedStates=Object.entries(stateMap).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const maxList=sortedStates[0]?.[1]||1;
+  listEl.innerHTML=sortedStates.length?sortedStates.map(([uf,val])=>`
+    <div class="d-state-row">
+      <span class="d-state-name">${uf}</span>
+      <div class="d-state-bar-wrap"><div class="d-state-bar" style="width:${val/maxList*100}%"></div></div>
+      <span class="d-state-val">${val}</span>
+    </div>`).join(''):'<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;padding:8px 0">Sem dados de estado</div>';
+}
+
 function dashShowError(msg){const el=document.getElementById('dashError');if(!el)return;if(msg){el.style.display='block';el.textContent=msg;}else el.style.display='none';}
-function dashStartCountdown(){if(dRefreshTimer)clearInterval(dRefreshTimer);dCountdown=300;dRefreshTimer=setInterval(()=>{dCountdown--;if(dCountdown<=0){dCountdown=300;if(area==='imann'&&sub==='dashboard')dashFetchAll();}},1000);}
+function dashStartCountdown(){if(dRefreshTimer)clearInterval(dRefreshTimer);dRefreshTimer=setInterval(()=>{},1000);}
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtD(d){if(!d)return'';const[y,m,day]=d.split('-');return day+'/'+m+'/'+y}
@@ -483,7 +616,7 @@ function toggleNotif(){if(!('Notification' in window)){toast('Não suportado');r
 function checkNotifs(){const today=new Date().toISOString().split('T')[0];['imann','mali','pes'].forEach(a=>{SUBTABS[a].forEach(st=>{if(st.id==='dashboard')return;const s=data[a]&&data[a][st.id];if(!s)return;s.contas.forEach(c=>{if(!c.paid&&c.dt&&c.dt<=today)new Notification('G.HUB — Vencimento',{body:c.nome+' — R$ '+parseFloat(c.valor||0).toFixed(2)});});});});}
 function restoreNotif(){if(data.notifOn&&'Notification' in window&&Notification.permission==='granted'){notifOn=true;document.getElementById('notifPill').textContent='notif on';document.getElementById('notifPill').classList.add('on');checkNotifs();notifTimer=setInterval(checkNotifs,3600000);}}
 
-if('serviceWorker' in navigator){const sw=`const C='ghub-v4';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['./']))));self.addEventListener('fetch',e=>{if(e.request.url.includes('supabase.co')||e.request.url.includes('googleapis.com')||e.request.url.includes('bling.com.br')||e.request.url.includes('make.com')){e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503})));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;const blob=new Blob([sw],{type:'application/javascript'});navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});}
+if('serviceWorker' in navigator){const sw=`const C='ghub-v5';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['./']))));self.addEventListener('fetch',e=>{if(e.request.url.includes('supabase.co')||e.request.url.includes('googleapis.com')||e.request.url.includes('bling.com.br')||e.request.url.includes('make.com')){e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503})));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;const blob=new Blob([sw],{type:'application/javascript'});navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});}
 
 document.addEventListener('click',e=>{if(!document.getElementById('moveMenu').contains(e.target))closeMoveMenu();});
 document.getElementById('contaModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
@@ -493,10 +626,20 @@ initData();dashLoadConfig();setDatePill();renderSubs();renderBoard();setSS('');
 if(data.frase)document.getElementById('fraseInput').value=data.frase;
 restoreNotif();syncNow(true);setInterval(()=>syncNow(true),120000);
 
-(function(){
+(async function(){
   const p=new URLSearchParams(window.location.search);
   const code=p.get('code');
-  if(code){toast('Conectando ao Bling...');blingOAuthExchange(code);}
+  const tokenSaved=p.get('token_saved');
+  if(code){
+    toast('Conectando ao Bling...');
+    blingOAuthExchange(code);
+  } else if(tokenSaved){
+    window.history.replaceState({},'',window.location.pathname);
+    toast('Carregando token...');
+    const ok=await loadTokenFromSupabase();
+    if(ok){toast('Bling conectado ✓');area='imann';sub='dashboard';renderSubs();renderBoard();}
+    else toast('Erro ao carregar token');
+  }
 })();
 </script>
 </body>
